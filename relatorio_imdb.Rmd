@@ -1,0 +1,144 @@
+---
+title: "Analise IMDB"
+author: "Katerine Witkoski"
+output: html_document
+---
+
+# Meu caderno de instruções nº 1
+
+
+Vamos fazer nossa primeira análise de dados, e eu katerine vou tentar auxiliar vocês nessa jornada. 
+Nosso objetivo é impressionar dois prosutores de filmes e auxiliar eles a identificar qual seria o melhor filme para esse ano obtendo sucesso financeiro e reconhecimento da crítica
+
+O nosso primeiro passo é importar os dados, no meu caso minha base se encontrava na pasta dados no formato `.rds`. 
+
+## Importanto base 
+```{r}
+imdb <- readr::read_rds("dados/imdb.rds")
+``` 
+Aqui nos importamos usando o pacote `readr` ultilizando a expressão  `::`com a função `readr_rds` específica para importar arquivos no formato `rds`. 
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+```{r}
+glimpse(imdb)
+``` 
+
+Usamos a função `glimpse` uma função do pacote `tidyverse` para visualisar todas as informações da base, ela mostra as suas váriaveis e suas características. Com essas informações será mais fácil chegar tomar uma decisão na sua analise. Portanto temos que observar os seguintes pontos quais são as melhores notas, melhores atores (eles estão relacionados), melhores diretores e o genêro que mais teve notas altas. 
+
+# Entendendo a problemática 
+
+Conhecendo as caracteristicas da base podemos chegar nas seguintes conclusões:
+
+1. Quais são os Top 10 filmes?
+2. Qual é relação entre a Receita e o Orçamento do filme? 
+3. Quais são os filmes que tiveram nota maior que 8? Qual é sua média de lucro?
+4. Qual são os 5 maiores Diretores? Qual é a relação de lucro entre eles? 
+5. Qual é a duração de um filme de sucesso? 
+6. Entre os filmes de sucesso, quais atores tiveram mais influencia? 
+
+# Explorando a base e manipulando dados 
+Antes de tudo criamos uma lógica em que receita -  orçamento poderá me dar o lucro. 
+
+**LUCRO = receita - orçamento** 
+```{r}
+imdb <- imdb %>% mutate(lucro = receita - orcamento)
+```
+
+1. Quais são os Top 10 Filmes?
+
+
+```{r,  eval = TRUE, echo = FALSE}
+imdb %>% 
+  mutate(lucro = receita - orcamento) %>% 
+  top_n(10, lucro) %>% 
+  arrange(desc(lucro)) %>%
+  mutate(
+    pos = 1:10,
+    lucro = scales::dollar(lucro)
+  ) %>% 
+  select(`Posição` = pos, Filme = titulo, Lucro = lucro) %>% 
+  knitr::kable()
+```
+Observamos que pela análise temos como o melhor classificado o Avatar, escrito e dirigido por James Cameron, seu lucro foi de 523505,847 dólares. Avatar foi nomeado em nove categorias do Oscar, incluido  Melhor Filme e Melhor Diretor, porém foi premiado apenas em três categorias: Melhor Fotografia, Melhores Efeitos Visuais e Melhor Direção de Arte. Chique demais, quem não pegou aquela sessão 3D que era mega novidade para assitir o lançamento?? Foi emocionante!
+
+## Criando uma função de tema 
+
+Para padronizar os gráficos eu criei um tema base:
+
+```{r}
+tema_analise <- function() {
+  theme(
+    text = element_text(
+      color = "#4ABDAC",
+      size = 16),
+    plot.title = element_text(
+      colour = "#FC4A1A",
+      hjust = 0.5,
+      size = 25),
+    panel.background = element_rect(fill = "#DFDCE3"),
+    legend.position = "bottom")
+}
+
+```
+
+2. Qual é relação entre a Receita e o Orçamento do filme? 
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+imdb %>%
+  filter(!is.na(lucro)) %>% 
+  mutate(lucrou = ifelse(lucro <= 0, "Não", "Sim")) %>%
+  ggplot() +
+  geom_point(aes(x = orcamento, y = receita, color = lucrou)) +
+  labs(
+    title = "Houve lucro ou não?",
+    subtitle = "Receita vs Orçamento")+
+  tema_analise()+
+  scale_colour_brewer(palette = "Set2")
+```
+
+ 
+Vamos fazer um gráfico de dispersão da lucro maior de 50000 em filmes com nota imdb > 8 x orçamento
+É considerado melhores notas aqueles filmes que tem nota acima de 8 
+
+```{r, fig.align = "center", warning = FALSE}
+imdb %>% 
+  filter(receita - orcamento > 5000000 & nota_imdb > 8) %>% 
+  group_by(orcamento, nota_imdb, receita) %>% 
+  ggplot() +
+  geom_point(aes(x = orcamento, y = receita), colour = "#E24E42", size = 2) +
+  labs(
+    title = "Lucro das Melhores notas",
+    subtitle = "Lucro maior de 5000000 em filmes com nota imdb maiores de 8 vs Orçamento") +
+  tema_analise() 
+```
+
+#fazer um gráfico com os top 5 diretores 
+
+```{r, fig.align = "center", warning = FALSE}
+top_5_diretores <- imdb %>% 
+  count(diretor) %>%
+  filter(!is.na(diretor)) %>% 
+  top_n(5, n)  
+
+top_5_diretores %>%
+  mutate(diretor = forcats::fct_reorder(diretor, n)) %>% 
+  ggplot() +
+  geom_col(
+    aes(x = n, y = diretor, fill = diretor), 
+    show.legend = FALSE) +
+  geom_label(aes(x = n/2, y = diretor, label = n)) +
+  labs(
+    x = "numero de filmes",
+    y = "Diretores ($)",
+    title = "Os melhores Diretores")+
+scale_fill_manual(values = c("#F781D8", "#FF8000", "#00FF00", "#819FF7", "#FE2E2E")) +
+  tema_analise()
+``` 
+
+
