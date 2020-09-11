@@ -1,0 +1,314 @@
+---
+title: "Analise IMDB"
+author: "Katerine Witkoski"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Meu caderno de instruções nº 1
+
+
+Vamos fazer nossa primeira análise de dados, e eu Katerine vou tentar auxiliar vocês nessa jornada. 
+Nosso objetivo é impressionar dois produtores de filmes e auxiliar eles a identificar qual seria o melhor filme para esse ano obtendo sucesso financeiro e reconhecimento da crítica. Vamos ajuda-los a concorrer o Oscar de 2021!!
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/1.jpg")
+```
+
+
+O nosso primeiro passo é importar os dados, no meu caso minha base se encontrava na pasta data_raw no formato `.rds`.  
+
+
+## Importanto base 
+```{r}
+
+imdb <- readr::read_rds("data_raw/imdb.rds")
+``` 
+
+Aqui nos importamos usando o pacote `readr` ultilizando a expressão  `::`com a função `readr_rds` específica para importar arquivos no formato `rds`. 
+
+
+Vamos carregar os pacotes para esse projeto: 
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+
+Usamos a função `glimpse` uma função do pacote `tidyverse` para visualisar todas as informações da base, ela mostra as suas váriaveis e suas características. Com essas informações será mais fácil chegar a uma tomada de decisão na sua analise. Portanto temos que observar os seguintes pontos quais são as melhores notas, melhores atores (eles estão relacionados), melhores diretores e o genêro que mais teve notas altas. 
+
+```{r}
+glimpse(imdb)
+``` 
+
+
+## Entendendo a problemática 
+
+Conhecendo as caracteristicas da base podemos chegar nas seguintes conclusões:
+
+1. Quais são os Top 10 filmes?
+2. Qual é relação entre a Receita e o Orçamento do filme? Houve lucro? 
+3. Lucro dos filmes com as melhores notas? 
+4. Qual são os 5 maiores Diretores? Qual é a relação de lucro entre eles? 
+5. Qual é a duração de um filme de sucesso? 
+6. Quais são os 10 melhores atores? Qual é a nota média deles?
+7. Quais são os genênos mais badalados?
+
+
+## Explorando a base e manipulando dados 
+
+Antes de tudo criamos uma lógica em que *receita -  orçamento* poderá me dar o lucro. 
+
+**LUCRO = receita - orçamento** 
+```{r}
+imdb <- imdb %>% mutate(lucro = receita - orcamento)
+```
+
+1. Quais são os Top 10 Filmes?
+
+```{r,  eval = TRUE, echo = FALSE}
+imdb %>% 
+  mutate(lucro = receita - orcamento) %>% 
+  top_n(10, lucro) %>% 
+  arrange(desc(lucro)) %>%
+  mutate(
+    pos = 1:10,
+    lucro = scales::dollar(lucro)
+  ) %>% 
+  select(`Posição` = pos, Filme = titulo, Lucro = lucro) %>% 
+  knitr::kable()
+```
+Observamos que pela análise temos como o melhor classificado o Avatar, escrito e dirigido por James Cameron, seu lucro foi de 523505,847 dólares. Avatar foi nomeado em nove categorias do Oscar, incluido  Melhor Filme e Melhor Diretor, porém foi premiado apenas em três categorias: Melhor Fotografia, Melhores Efeitos Visuais e Melhor Direção de Arte. Chique demais, quem não pegou aquela sessão 3D que era mega novidade para assitir o lançamento?? Foi emocionante!
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/2.jpg")
+```
+
+
+### Criando uma função de tema 
+
+Para padronizar os gráficos eu criei um tema base:
+
+```{r}
+
+tema_analise <- function() {
+  theme(
+    text = element_text(
+      color = "#4ABDAC",
+      size = 10),
+    plot.title = element_text(
+      colour = "#FC4A1A",
+      hjust = 0.5,
+      size = 20),
+    panel.background = element_rect(fill = "#DFDCE3"),
+    legend.position = "bottom")
+}
+
+```
+
+2. Qual é relação entre a Receita e o Orçamento do filme? 
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+imdb %>%
+  filter(!is.na(lucro)) %>%
+  mutate(lucrou = ifelse(lucro <= 0, "Não", "Sim")) %>%
+  ggplot() +
+  geom_point(aes(x = orcamento, y = receita, color = lucrou)) +
+  labs(
+    title = "Houve Lucro ou Não?",
+    subtitle = "Receita vs Orçamento")+
+  scale_x_continuous(labels = scales::dollar)+
+  scale_y_continuous(labels = scales::dollar)+
+  tema_analise()+
+  scale_colour_brewer(palette = "Set2")
+```
+Para interpretar esse parâmetro eu utilizei o mêtodo do gráfico de dispersão, observando a correlação entre os eixos *receita e orçamento*. Note-se que a maioria se econtra em um orçamento abaixo de 100.000,00 dolares e a receita de R$ 200.000,00 dolares. Nesse gráfico vimos alguns pontos de outliers, execendo dos valores esperados. 
+
+
+3. Lucro dos filmes com as melhores notas? 
+ 
+Vamos fazer um gráfico de dispersão da lucro maior de 50000 em filmes com nota imdb > 8 x orçamento
+*É considerado melhores notas aqueles filmes que tem nota acima de 8* 
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+imdb %>%
+  filter(receita - orcamento > 5000000 & nota_imdb > 8) %>%
+  group_by(orcamento, nota_imdb, receita) %>%
+  ggplot() +
+  geom_point(aes(x = orcamento, y = receita), colour = "#E24E42", size = 2) +
+  labs(
+    title = "Lucro das Melhores Notas",
+    subtitle = "Lucro maior de 5000000 em filmes com nota imdb maiores de 8 vs Orçamento") +
+  scale_x_continuous(labels = scales::dollar)+
+  scale_y_continuous(labels = scales::dollar)+
+  tema_analise()
+```
+
+Nesse gráfico obsevamos que a relação entre os pontos um crescimento linear, contendo uma distância relevante entre elas, a qual faz entender que existe uma possivel correlação positiva entre as váriaveis *receita e orçamento*, significando que a variável afeta positivamente a outra. 
+
+  
+4. Qual são os 5 maiores Diretores? Qual é a relação de lucro entre eles? 
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+top_5_diretores <- imdb %>%
+  count(diretor) %>%
+  filter(!is.na(diretor)) %>%
+  top_n(5, n)
+
+top_5_diretores %>%
+  mutate(diretor = forcats::fct_reorder(diretor, n)) %>%
+  ggplot() +
+  geom_col(
+    aes(x = n, y = diretor, fill = diretor),
+    show.legend = FALSE) +
+  geom_label(aes(x = n/2, y = diretor, label = n)) +
+  labs(
+    x = "Numero de filmes",
+    y = "Diretores",
+    title = "Os Melhores Diretores")+
+scale_fill_manual(values = c("#F781D8", "#FF8000", "#00FF00", "#819FF7", "#FE2E2E")) +
+  tema_analise()
+``` 
+
+Com esse gráfico de colunas, para os amantes de cinema, temos uma boa notícia. Classificamos os melhores Diretores: 
+
+* Steven Spilberg, diretor dos filmes que você provavelmente já assistiu 567864 vezes em alguma sessão na TV aberta como "E.T.: O Extraterreste", "Tubarão", "Contatos Imediatos", entre outros;
+
+* Martin Scorsese, o diretor mais "gangster, com os filmes queridinhos do cinema como "Taxi- Driver", "Os Infiltrados","O irlandês", entre outros; 
+
+* Clint Eastwood,  o diretor mais bang-bang da lista, produtor de filmes como "Os Imperdoáveis", "Sniper Americano", mas não podemos esquecer das interpretações como ator em filmes com a temática faroeste, o mais memorável "Três Homens em Comflito". E acredita TODO filme de foroeste terá a famosa trilha sonora composta pelo Ennio Morricone, feita exclusivamente para seu tema principal;
+
+* Woody Allen, aquele diretor mais meloso e carismático com suas comédias romanticas "Annie Hall" e "Manhattan", para quem curte um momento fofura ele é uma ótima sugestão;
+
+* Spike Lee, um diretor que tem discursos fortes contra o preconceito racial, ele trás reflexão em filmes como "Ela quer tudo", "Malcom X", "Quatro Meninas: Uma história real", entre outros; 
+
+e vamos falar de lucro...
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+imdb %>%
+  filter(!is.na(diretor)) %>%
+  group_by(diretor) %>%
+  filter(n() >= 15) %>%
+  ggplot() +
+  geom_boxplot(aes(x = diretor, y = lucro), color = "#E24E42")+
+  labs(
+    title = "Lucro dos diretores",
+    subtitle = "Lucro vs Diretor")+
+  scale_y_continuous(labels = scales::dollar)+
+  tema_analise()
+
+```
+Observamos que entre os diretores Clint Eastwood e Steven Spielberg encontramos outliers, excedendo o valor esperado. Sendo o máximo 300.000,00 dolares e o mínino 100.000,00. 
+
+5. Qual é a duração de um filme de sucesso? 
+
+Se há algum tempo apenas grandes épicos e filmes históricos costumavam passar das 2 horas e meia, agora não há mais um limite para gêneros, mas sabemos que para concorrer ao Oscar somente 40 minutos de filmagem já é o suficiente para ser indicado. 
+
+Portanto podemos analisar: 
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+imdb %>%
+    mutate(tipo_duracao = ifelse(duracao < 120, "menos de 2h","mais de 2h")) %>%
+    filter(!is.na(tipo_duracao)) %>%
+    count(tipo_duracao) %>%
+    ggplot()+
+  geom_col(aes(x = tipo_duracao, y = n), colour = "#819FF7", fill = "#819FF7")+
+      labs(
+      title = "Filmes com Duração de 2 Horas")+
+      tema_analise()
+```
+
+Entre os filmes da base observamos que a maioria contém uma duração de menos de 2 horas. 
+
+6. Quais são os 10 melhores atores? Qual é a nota média deles?
+
+Um filmão precisa que um ator a altura, alguém versátil de uma atuação mais de tirar o folego e menos Kristen Stewart no filme "Crepúsculo".
+
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/3.jpeg")
+```
+
+Realizei uma análise da média das notas entre os melhores atores relacionados a filmes com notas acima de 8: 
+
+
+```{r,  eval = TRUE, echo = FALSE}
+
+ top_atores <- imdb %>%
+      pivot_longer(
+        cols = starts_with("ator"),
+        names_to = "posicao",
+        values_to = "ator") %>%
+      select(ator, nota_imdb) %>%
+        filter(nota_imdb >= 8) %>%
+           arrange(desc(nota_imdb))
+
+  top_atores %>%
+   group_by(ator, nota_imdb) %>%
+   nest() %>%
+    mutate(media_das_notas = mean(nota_imdb))
+   
+```
+
+Concluindo os 5 melhores: 
+
+Atores         |Media das notas 
+---------------|-----
+Morgan Freeman | 9.3
+Jeffrey DeMunn | 9.3
+Bob Gunton     | 9.3
+Al Pacino	     | 9.2
+Marlon Brando  | 9.2
+
+
+
+7. Quais são os genênos mais badalados?
+Está na hora de decidir, tem muitos tipos de gêneros de filmes e cada um deles desperta uma sensação diferente na hora de assistir, e aqui podemos ver qual é o genêro mais queridinho: 
+
+
+```{r,  eval = TRUE, echo = FALSE}
+ imdb %>%
+      count(generos) %>%
+      filter(!is.na(generos)) %>%
+      top_n(5, n) %>% 
+      knitr::kable()
+
+```
+Observamos que o gênero que alcançou o coração do telespectador é o Comédia. 
+ 
+Mas vamos pensar no lucro: 
+ 
+ 
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+top_comedia <- imdb %>%
+      filter(generos %in% "Comedy")
+
+
+ top_comedia %>%
+      group_by(receita, orcamento) %>%
+      ggplot()+
+      geom_point(aes(x = orcamento, y = receita/2), colour = "#E24E42", size = 2)+
+     labs(
+     title = "Média de Lucro dos Filmes de Comédia")+
+      scale_x_continuous(labels = scales::dollar)+
+      scale_y_continuous(labels = scales::dollar)+
+      geom_hline(yintercept = mean((top_comedia$receita - top_comedia$orcamento), na.rm = TRUE), colour = "#819FF7", size = 1)+
+   tema_analise()
+
+```
+ 
+A média do lucro está perto do 25.000,000 e nesse gráfico podemos ver que boa parte dos filmes atingiram a meta para o sucesso. 
+
+## Conclusão
+
+Para um filme de sucesso, além da criatividade dos produtores chegamos na conclusão que a fim de criar uma experiência incrivel em meio desses tempos de pandemia. Faremos o pessoal rir um pouco com o gênero **Comédia**, na direção do nosso queridinho **Steven Spilberg**, de duração de pelo menos 2 horas ou menor, com os atores protagonistas **Morgan Freemam** e **Jeffrey DeMunn**. 
+
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE, fig.width = 1, fig.height = 1}
+knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/4.jpg")
+```
+
+

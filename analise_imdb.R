@@ -5,7 +5,7 @@ library(tidyverse)
 library(ggplot2)
 library(RColorBrewer)
 library(ggthemes)
-library(pagedown)
+
 
 
 # Importanto base ----
@@ -100,7 +100,7 @@ imdb %>%
   tema_analise()
 
 
-# Lucro médio dos filmes com duracao - menor que 120 minutos. 5º gráfico
+# filmes com duracao - menor que 120 minutos. 5º gráfico
 
   imdb %>%
     mutate(tipo_duracao = ifelse(duracao < 120, "menos de 2h","mais de 2h")) %>%
@@ -112,7 +112,7 @@ imdb %>%
       title = "Filmes com Duração de 2 Horas")+
       tema_analise()
 
-# TOP Atores - 2ª tabela
+# TOP Atores - 3ª tabela
 
 
  top_atores <- imdb %>%
@@ -130,10 +130,12 @@ imdb %>%
 top_atores %>%
    group_by(ator, nota_imdb) %>%
    nest() %>%
-    mutate(media_das_notas = mean(nota_imdb))
+    mutate(media_das_notas = mean(nota_imdb)) %>%
+    top_n(5, n)
 
 
-# Generos mais badalados- 3ª tabela
+
+# Generos mais badalados- 4ª tabela
 
     top_5_generos <- imdb %>%
       count(generos) %>%
