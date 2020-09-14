@@ -12,11 +12,6 @@ output:
 Vamos fazer nossa primeira análise de dados, e eu Katerine vou tentar auxiliar vocês nessa jornada. 
 Nosso objetivo é impressionar dois produtores de filmes e auxiliar eles a identificar qual seria o melhor filme para esse ano obtendo sucesso financeiro e reconhecimento da crítica. Vamos ajuda-los a concorrer o Oscar de 2021!!
 
-```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
-knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/1.jpg")
-```
-
-
 O nosso primeiro passo é importar os dados, no meu caso minha base se encontrava na pasta data_raw no formato `.rds`.  
 
 
@@ -28,7 +23,6 @@ imdb <- readr::read_rds("data_raw/imdb.rds")
 
 Aqui nos importamos usando o pacote `readr` ultilizando a expressão  `::`com a função `readr_rds` específica para importar arquivos no formato `rds`. 
 
-
 Vamos carregar os pacotes para esse projeto: 
 
 ```{r, message=FALSE, warning=FALSE}
@@ -37,7 +31,6 @@ library(ggplot2)
 library(RColorBrewer)
 library(ggthemes)
 ```
-
 
 Usamos a função `glimpse` uma função do pacote `tidyverse` para visualisar todas as informações da base, ela mostra as suas váriaveis e suas características. Com essas informações será mais fácil chegar a uma tomada de decisão na sua analise. Portanto temos que observar os seguintes pontos quais são as melhores notas, melhores atores (eles estão relacionados), melhores diretores e o genêro que mais teve notas altas. 
 
@@ -84,10 +77,6 @@ imdb %>%
 ```
 Observamos que pela análise temos como o melhor classificado o Avatar, escrito e dirigido por James Cameron, seu lucro foi de 523505,847 dólares. Avatar foi nomeado em nove categorias do Oscar, incluido  Melhor Filme e Melhor Diretor, porém foi premiado apenas em três categorias: Melhor Fotografia, Melhores Efeitos Visuais e Melhor Direção de Arte. Chique demais, quem não pegou aquela sessão 3D que era mega novidade para assitir o lançamento?? Foi emocionante!
 
-```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
-knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/2.jpg")
-```
-
 
 ### Criando uma função de tema 
 
@@ -128,11 +117,10 @@ imdb %>%
 ```
 Para interpretar esse parâmetro eu utilizei o mêtodo do gráfico de dispersão, observando a correlação entre os eixos *receita e orçamento*. Note-se que a maioria se econtra em um orçamento abaixo de 100.000,00 dolares e a receita de R$ 200.000,00 dolares. Nesse gráfico vimos alguns pontos de outliers, execendo dos valores esperados. 
 
-
 3. Lucro dos filmes com as melhores notas? 
  
 Vamos fazer um gráfico de dispersão da lucro maior de 50000 em filmes com nota imdb > 8 x orçamento
-*É considerado melhores notas aqueles filmes que tem nota acima de 8* 
+*É considerado melhores notas aqueles filmes que tem nota acima de 8*.
 
 ```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
 imdb %>%
@@ -228,13 +216,7 @@ Entre os filmes da base observamos que a maioria contém uma duração de menos 
 
 Um filmão precisa que um ator a altura, alguém versátil de uma atuação mais de tirar o folego e menos Kristen Stewart no filme "Crepúsculo".
 
-
-```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
-knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/3.jpeg")
-```
-
 Realizei uma análise da média das notas entre os melhores atores relacionados a filmes com notas acima de 8: 
-
 
 ```{r,  eval = TRUE, echo = FALSE}
 
@@ -264,8 +246,6 @@ Bob Gunton     | 9.3
 Al Pacino	     | 9.2
 Marlon Brando  | 9.2
 
-
-
 7. Quais são os genênos mais badalados?
 Está na hora de decidir, tem muitos tipos de gêneros de filmes e cada um deles desperta uma sensação diferente na hora de assistir, e aqui podemos ver qual é o genêro mais queridinho: 
 
@@ -281,8 +261,7 @@ Está na hora de decidir, tem muitos tipos de gêneros de filmes e cada um deles
 Observamos que o gênero que alcançou o coração do telespectador é o Comédia. 
  
 Mas vamos pensar no lucro: 
- 
- 
+
 ```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
 top_comedia <- imdb %>%
       filter(generos %in% "Comedy")
@@ -307,8 +286,6 @@ A média do lucro está perto do 25.000,000 e nesse gráfico podemos ver que boa
 
 Para um filme de sucesso, além da criatividade dos produtores chegamos na conclusão que a fim de criar uma experiência incrivel em meio desses tempos de pandemia. Faremos o pessoal rir um pouco com o gênero **Comédia**, na direção do nosso queridinho **Steven Spilberg**, de duração de pelo menos 2 horas ou menor, com os atores protagonistas **Morgan Freemam** e **Jeffrey DeMunn**. 
 
-```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE, fig.width = 1, fig.height = 1}
-knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/4.jpg")
+```{r, echo = FALSE, fig.keep='high', fig.align= "center", warning = FALSE}
+knitr::include_graphics("/home/katerine/Documents/myfirstanalysis/docs/1.jpg")
 ```
-
-
